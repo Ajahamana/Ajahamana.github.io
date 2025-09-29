@@ -3,260 +3,145 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chúc mừng ngày đẻ 🎉</title>
-  <meta name="description" content="Trang chúc mừng sinh nhật với hiệu ứng confetti, bóng bay và nền img.png" />
+  <title>Happy Birthday ✨</title>
+  <meta name="description" content="Trang sinh nhật tự động: confetti, bóng bay, nền img.png, lấp phần trống bằng chữ HAPPY BIRTHDAY và phát nhạc YouTube." />
   <link rel="preload" as="image" href="img.png">
   <style>
     :root{
-      --backdrop: rgba(0,0,0,.45);
-      --card: rgba(255,255,255,.12);
-      --card-border: rgba(255,255,255,.25);
-      --text: #fff;
-      --accent: #ffd54f;
+      --text:#fff;
+      --tint: rgba(0,0,0,.25);
+      --vignette: radial-gradient(120% 100% at 50% 10%, rgba(0,0,0,0) 50%, rgba(0,0,0,.45) 100%);
     }
-
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      color:var(--text); overflow:hidden;
-      background:#111;
-    }
+    body{margin:0; background:#000; color:var(--text); overflow:hidden; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"}
 
-    /* Background Image */
-    .bg::before{
-      content:""; position:fixed; inset:0; z-index:-2;
-      background:url('img.png') center/cover no-repeat fixed;
-      filter: saturate(1.05) brightness(.85);
-      transform: scale(1.02);
-    }
-    /* Soft overlay for readability */
-    .bg::after{
-      content:""; position:fixed; inset:0; z-index:-1;
-      background: radial-gradient(100% 120% at 50% 0%, rgba(0,0,0,0.25), rgba(0,0,0,0.75)), linear-gradient(var(--backdrop), var(--backdrop));
-      backdrop-filter: blur(2px);
-    }
+    /* 1) Bottom layer: dense repeated HAPPY BIRTHDAY pattern to fill khoảng trống */
+    .pattern{ position:fixed; inset:0; z-index:-3; display:grid; grid-template-columns: repeat(auto-fill, 200px); grid-auto-rows: 64px; align-content:stretch; justify-content:stretch; }
+    .pattern span{ display:flex; align-items:center; justify-content:center; font-weight:900; letter-spacing:.12em; font-size:22px; text-transform:uppercase; opacity:.12; user-select:none; pointer-events:none; color:#fff; filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
+    .pattern span:nth-child(odd){ opacity:.1 }
 
-    /* Center Stage */
-    .stage{
-      position:relative; height:100%; width:100%; display:grid; place-items:center; padding:24px;
-    }
-    .card{
-      width:min(820px, 92vw); padding:28px 28px 22px; border-radius:24px;
-      background: var(--card); border:1px solid var(--card-border);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.15);
-      backdrop-filter: blur(6px) saturate(140%);
-    }
-    .title{
-      margin:0 0 6px; font-weight:800; text-align:center; line-height:1.15;
-      font-size: clamp(28px, 6vw, 54px);
-      letter-spacing:.5px;
-      text-shadow: 0 0 8px rgba(255,255,255,.35), 0 0 24px rgba(255,215,0,.25);
-      animation: glow 2.5s ease-in-out infinite alternate;
-    }
-    @keyframes glow{
-      from{ text-shadow: 0 0 6px rgba(255,255,255,.35), 0 0 14px rgba(255,215,0,.25);} 
-      to{   text-shadow: 0 0 16px rgba(255,255,255,.55), 0 0 38px rgba(255,215,0,.45);} 
-    }
+    /* 2) Middle layer: background image always fully visible (contain) */
+    .bg-image{ position:fixed; inset:0; z-index:-2; background: center/contain no-repeat url('img.png'); }
 
-    .subtitle{ text-align:center; opacity:.9; margin:0 0 12px; font-size: clamp(16px, 2.6vw, 20px); }
+    /* 3) Soft overlay to boost contrast and make text readable while giữ nguyên toàn vẹn ảnh */
+    .overlay{ position:fixed; inset:0; z-index:-1; background: var(--vignette), linear-gradient(var(--tint), var(--tint)); }
 
-    .cta{
-      margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;
-    }
-    .btn{
-      appearance:none; border:none; cursor:pointer; padding:12px 18px; border-radius:999px; font-weight:700;
-      color:#111; background:#ffdf6b; box-shadow: 0 8px 22px rgba(0,0,0,.25);
-      transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
-    }
-    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 10px 26px rgba(0,0,0,.32); }
-    .btn:active{ transform: translateY(1px) scale(.99); }
-
-    .btn-outline{
-      color:var(--text); background:transparent; border:1px solid var(--card-border);
-    }
-
-    /* Floating emojis on the card header */
-    .floaties{ position:absolute; inset:0; pointer-events:none; }
-    .floaties span{
-      position:absolute; font-size:22px; opacity:.85; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
-      animation: drift var(--dur, 8s) linear infinite;
-    }
-    @keyframes drift{
-      0%{ transform: translateY(0) translateX(0) rotate(0deg); opacity: .1; }
-      10%{ opacity:.85 }
-      100%{ transform: translateY(-140px) translateX(var(--dx, 40px)) rotate(20deg); opacity:.05; }
-    }
-
-    /* Confetti Canvas */
-    canvas#confetti{ position:fixed; inset:0; pointer-events:none; z-index:5; }
+    /* Confetti canvas on top */
+    canvas#confetti{ position:fixed; inset:0; z-index:5; pointer-events:none }
 
     /* Balloons */
-    .balloon{ position:fixed; bottom:-160px; width:46px; height:60px; border-radius:50% 50% 48% 48%; 
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.6), rgba(255,255,255,0) 40%), var(--color, #f55); 
-      box-shadow: inset -6px -10px 16px rgba(0,0,0,.2), 0 10px 30px rgba(0,0,0,.25); 
+    .balloon{ position:fixed; bottom:-160px; width:46px; height:60px; border-radius:50% 50% 48% 48%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.6), rgba(255,255,255,0) 40%), var(--color, #f55);
+      box-shadow: inset -6px -10px 16px rgba(0,0,0,.2), 0 10px 30px rgba(0,0,0,.25);
       transform: translateX(-50%);
-      z-index: 3;
+      z-index:3
     }
-    .balloon::after{ content:""; position:absolute; bottom:-16px; left:50%; width:2px; height:90px; background:rgba(255,255,255,.75); transform: translateX(-50%); opacity:.75 }
-    @keyframes floatUp{
-      0%{ transform: translate(-50%, 0) scale(1); opacity:0 }
-      5%{ opacity:1 }
-      100%{ transform: translate(-50%, -110vh) scale(1.05); opacity:.95 }
-    }
+    .balloon::after{ content:""; position:absolute; bottom:-16px; left:50%; width:2px; height:90px; background:rgba(255,255,255,.75); transform: translateX(-50%); opacity:.8 }
+    @keyframes floatUp{ 0%{ transform: translate(-50%, 0) scale(1); opacity:0 } 5%{ opacity:1 } 100%{ transform: translate(-50%, -110vh) scale(1.05); opacity:.95 } }
 
-    /* Footer note */
-    .footer{ position:fixed; bottom:10px; right:12px; font-size:12px; opacity:.8 }
-
-    /* Audio control */
-    .audio{ display:flex; align-items:center; gap:8px; opacity:.95 }
-    .audio input[type="range"]{ width:160px }
-
-    /* Small screens */
-    @media (max-width: 480px){
-      .btn{ padding:10px 14px }
-      .balloon{ width:40px; height:54px }
-    }
+    /* Title watermark (no controls) */
+    .title{ position:fixed; left:50%; top:8%; transform:translateX(-50%); text-align:center; font-weight:800; letter-spacing:.5px; text-shadow:0 0 12px rgba(255,255,255,.35); font-size:clamp(28px,5vw,52px); }
   </style>
 </head>
 <body>
-  <div class="bg" aria-hidden="true"></div>
+  <!-- Dense text layer to fill any letterbox around the contained image -->
+  <div class="pattern" aria-hidden="true" id="pattern"></div>
+
+  <!-- Background image kept entirely visible (contain) -->
+  <div class="bg-image" aria-label="Background image"></div>
+  <div class="overlay" aria-hidden="true"></div>
+
+  <h1 class="title">🎉 Chúc mừng ngày đẻ của Khang Trần 🎂</h1>
+
+  <!-- Effects -->
   <canvas id="confetti"></canvas>
 
-  <div class="stage">
-    <section class="card">
-      <div class="floaties" aria-hidden="true"></div>
-      <h1 class="title">🎉 Chúc mừng <span id="name">ngày đẻ của Khang Trần</span> 🎂</h1>
-      <p class="subtitle" id="tagline">Chúc bạn một tuổi mới tràn đầy niềm vui, sức khỏe và may mắn! ✨</p>
-
-      <div class="cta">
-        <button class="btn" id="partyBtn">Bắt đầu tiệc!</button>
-        <button class="btn btn-outline" id="balloonBtn">Thả bóng bay</button>
-        <button class="btn btn-outline" id="confettiBtn">Bắn confetti</button>
-      </div>
-
-      <div class="cta" style="margin-top:10px">
-        <div class="audio">
-          <button class="btn btn-outline" id="musicBtn" title="Phát/Ngừng nhạc">🎵 Nhạc</button>
-          <label for="vol" style="font-size:12px">Âm lượng</label>
-          <input id="vol" type="range" min="0" max="1" step="0.01" value="0.5">
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <div class="footer">Bấm "Bắt đầu tiệc!" để kích hoạt hiệu ứng 🎈</div>
-
-  <audio id="music" preload="auto">
-    <source src="" type="audio/mpeg">
-  </audio>
+  <!-- Hidden YouTube background player (may be muted by browser autoplay policy) -->
+  <div id="ytbg" style="position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0"></div>
 
 <script>
 (function(){
-  const nameEl = document.getElementById('name');
-  const taglineEl = document.getElementById('tagline');
-  const partyBtn = document.getElementById('partyBtn');
-  const confettiBtn = document.getElementById('confettiBtn');
-  const balloonBtn = document.getElementById('balloonBtn');
-  const musicBtn = document.getElementById('musicBtn');
-  const vol = document.getElementById('vol');
-  const music = document.getElementById('music');
-
-  // You can set your mp3 URL here (optional)
-  // music.src = 'happy-birthday.mp3';
-
-  // Subtle typewriter effect for the tagline
-  const fullText = taglineEl.textContent;
-  taglineEl.textContent = '';
-  let i = 0; const type = () => { if(i <= fullText.length){ taglineEl.textContent = fullText.slice(0,i++); requestAnimationFrame(type);} }; type();
-
-  // Floaty emojis inside card
-  const floaties = document.querySelector('.floaties');
-  const emojis = ['🎈','🎉','✨','💫','🎊','🪅'];
-  for(let k=0;k<14;k++){
-    const s = document.createElement('span');
-    s.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-    s.style.left = Math.random()*100 + '%';
-    s.style.bottom = (Math.random()*40) + 'px';
-    s.style.setProperty('--dx', (Math.random()*120-60)+'px');
-    s.style.setProperty('--dur', (6 + Math.random()*6) + 's');
-    floaties.appendChild(s);
+  // ======== 1) Build dense HAPPY BIRTHDAY pattern grid ========
+  const pattern = document.getElementById('pattern');
+  function fillPattern(){
+    pattern.innerHTML = '';
+    const tileW = 200, tileH = 64;
+    const cols = Math.ceil(innerWidth / tileW) + 2;
+    const rows = Math.ceil(innerHeight / tileH) + 2;
+    pattern.style.gridTemplateColumns = `repeat(${cols}, ${tileW}px)`;
+    pattern.style.gridAutoRows = `${tileH}px`;
+    const words = ['HAPPY BIRTHDAY','HAPPY BIRTHDAY','HAPPY BIRTHDAY','🎉 HAPPY BIRTHDAY 🎉'];
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const s = document.createElement('span');
+        s.textContent = words[(r+c)%words.length];
+        const rot = (Math.random()<0.5? -1:1) * (8 + Math.random()*15); // nghiêng trái/phải
+        s.style.transform = `rotate(${rot}deg)`;
+        s.style.opacity = (0.08 + Math.random()*0.12).toFixed(2);
+        pattern.appendChild(s);
+      }
+    }
   }
+  fillPattern();
+  addEventListener('resize', fillPattern);
 
-  // Confetti setup
-  const confettiCanvas = document.getElementById('confetti');
-  const ctx = confettiCanvas.getContext('2d');
-  let W, H; const resize = () => { W = confettiCanvas.width = innerWidth; H = confettiCanvas.height = innerHeight; }; resize();
+  // ======== 2) Confetti + balloons auto-run ========
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  let W,H; function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; } resize();
   addEventListener('resize', resize);
 
   const COLORS = ['#f94144','#f3722c','#f9c74f','#90be6d','#43aa8b','#577590','#ff6b6b','#ffd166','#06d6a0','#4cc9f0'];
   let pieces = [];
-  function spawnConfetti(count=140, burstX=W/2, burstY=H/3){
+  function burst(count=200, x=W/2, y=H*0.6){
     for(let i=0;i<count;i++){
-      pieces.push({
-        x: burstX + (Math.random()*80-40), y: burstY + (Math.random()*40-20),
-        w: 6 + Math.random()*6, h: 10 + Math.random()*12,
-        color: COLORS[Math.random()*COLORS.length|0],
-        vx: (Math.random()*6 - 3), vy: (Math.random()*-6 - 4),
-        rot: Math.random()*Math.PI, vr: Math.random()*0.2 - 0.1,
-        life: 0, maxLife: 240 + Math.random()*120
-      });
+      pieces.push({ x:x+(Math.random()*80-40), y:y+(Math.random()*40-20), w:6+Math.random()*6, h:10+Math.random()*12,
+        c: COLORS[Math.random()*COLORS.length|0], vx:(Math.random()*6-3), vy:(Math.random()*-6-4), r:Math.random()*3.14, vr:Math.random()*0.2-0.1, l:0, ml:240+Math.random()*160 });
     }
   }
-
   function tick(){
     ctx.clearRect(0,0,W,H);
-    pieces.forEach(p=>{
-      p.vy += 0.08; // gravity
-      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life++;
-      if(p.y > H + 40) p.life = p.maxLife; // offscreen
-      ctx.save();
-      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-      ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-      ctx.restore();
-    });
-    pieces = pieces.filter(p=>p.life < p.maxLife);
+    pieces.forEach(p=>{ p.vy+=0.08; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.l++; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
+    pieces = pieces.filter(p=>p.l<p.ml && p.y<H+50);
     requestAnimationFrame(tick);
   }
   tick();
 
-  function randomX(){ return 30 + Math.random()*(innerWidth-60); }
-  function randomColor(){ return COLORS[Math.random()*COLORS.length|0]; }
-
   function spawnBalloon(){
-    const b = document.createElement('div');
-    b.className = 'balloon';
-    b.style.left = randomX() + 'px';
-    b.style.setProperty('--color', randomColor());
-    const dur = 8 + Math.random()*8;
-    b.style.animation = `floatUp ${dur}s linear forwards`;
-    document.body.appendChild(b);
-    b.addEventListener('animationend', ()=> b.remove());
+    const b = document.createElement('div'); b.className='balloon'; b.style.left = (30 + Math.random()*(innerWidth-60)) + 'px';
+    b.style.setProperty('--color', COLORS[Math.random()*COLORS.length|0]);
+    const dur = 8 + Math.random()*10; b.style.animation = `floatUp ${dur}s linear forwards`;
+    document.body.appendChild(b); b.addEventListener('animationend', ()=> b.remove());
   }
 
-  // Button actions
-  partyBtn.addEventListener('click', ()=>{
-    spawnConfetti(220, W/2, H*0.65);
-    for(let n=0;n<14;n++) setTimeout(spawnBalloon, n*180);
-    try{ music.play(); }catch(e){}
-  });
-  confettiBtn.addEventListener('click', ()=> spawnConfetti(160, W*Math.random(), H*(.35+.4*Math.random())));
-  balloonBtn.addEventListener('click', ()=>{ for(let n=0;n<10;n++) setTimeout(spawnBalloon, n*160); });
+  // Auto sequence
+  burst(260);
+  for(let i=0;i<14;i++) setTimeout(spawnBalloon, i*220);
+  // Periodic small bursts
+  setInterval(()=> burst(120, Math.random()*W, H*(.35+.4*Math.random())), 1000);
+  // Periodic balloons
+  setInterval(()=>{ for(let i=0;i<4;i++) setTimeout(spawnBalloon, i*180); }, 1000);
 
-  // Music controls
-  musicBtn.addEventListener('click', ()=>{
-    if(!music.src){
-      alert('Mẹo: đặt file \'happy-birthday.mp3\' cùng thư mục hoặc chỉnh music.src trong script.');
-      return;
-    }
-    if(music.paused) music.play(); else music.pause();
-  });
-  vol.addEventListener('input', ()=> music.volume = +vol.value);
-
-  // Accessibility: space/enter to fire party
-  addEventListener('keydown', (e)=>{
-    if(e.code==='Space' || e.key==='Enter'){ partyBtn.click(); }
-  });
+  // ======== 3) YouTube background music (no UI) ========
+  // NOTE: Trình duyệt có thể chặn autoplay với âm thanh. Mình cố gắng bật tự động; nếu bị chặn, nhạc sẽ tắt/muted cho đến khi có tương tác người dùng.
+  const YT_SRC = 'https://www.youtube.com/iframe_api';
+  const tag = document.createElement('script'); tag.src = YT_SRC; document.head.appendChild(tag);
+  const ytDiv = document.getElementById('ytbg');
+  const params = new URLSearchParams(location.search);
+  const videoId = params.get('videoId') || 'hVZ0-2dU5Yw'; // Bạn có thể thay ID khác nếu muốn
+  window.onYouTubeIframeAPIReady = function(){
+    const player = new YT.Player('ytbg', {
+      width:'100%', height:'100%', videoId,
+      playerVars:{ autoplay:1, controls:0, disablekb:1, fs:0, iv_load_policy:3, modestbranding:1, rel:0, start:0, playsinline:1, loop:1, playlist:videoId },
+      events:{ onReady: (e)=>{
+        // Thử phát với âm lượng mặc định
+        try{ e.target.setVolume(80); e.target.playVideo(); e.target.unMute(); }catch(err){}
+        // Nếu bị chặn, phát ở chế độ mute để đảm bảo chạy nền
+        setTimeout(()=>{ if(e.target.isMuted && e.target.isMuted()){ try{ e.target.playVideo(); }catch(_){} } }, 500);
+      }}
+    });
+  }
 })();
 </script>
 </body>
