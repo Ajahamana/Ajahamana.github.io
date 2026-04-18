@@ -1,326 +1,533 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Happy Birthday ✨</title>
-    <meta
-      name="description"
-      content="Trang sinh nhật tự động: confetti, bóng bay, nền img.png, lấp phần trống bằng chữ HAPPY BIRTHDAY và phát nhạc YouTube."
-    />
-    <link rel="preload" as="image" href="img.png" />
-    <style>
-      :root {
-        --text: #fff;
-        --tint: rgba(0, 0, 0, 0.25);
-        --vignette: radial-gradient(
-          120% 100% at 50% 10%,
-          rgba(0, 0, 0, 0) 50%,
-          rgba(0, 0, 0, 0.45) 100%
-        );
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        background: #000;
-        color: var(--text);
-        overflow: hidden;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
-          Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bonk Simulator</title>
+  <style>
+    :root {
+      --bg-a: #ffe066;
+      --bg-b: #74c0fc;
+      --bg-c: #ff8787;
+      --ink: #1f1f1f;
+      --panel: rgba(255, 255, 255, 0.55);
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      --target-base: translateY(0) scaleY(1);
+      --swing-duration: 100ms;
+    }
 
-      /* 1) Bottom layer: dense repeated HAPPY BIRTHDAY pattern to fill khoảng trống */
-      .pattern {
-        position: fixed;
-        inset: 0;
-        z-index: -3;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 200px);
-        grid-auto-rows: 64px;
-        align-content: stretch;
-        justify-content: stretch;
-      }
-      .pattern span {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 900;
-        letter-spacing: 0.12em;
-        font-size: 22px;
-        text-transform: uppercase;
-        opacity: 0.12;
-        user-select: none;
-        pointer-events: none;
-        color: #fff;
-        filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.4));
-      }
-      .pattern span:nth-child(odd) {
-        opacity: 0.1;
-      }
+    * {
+      box-sizing: border-box;
+    }
 
-      /* 2) Middle layer: background image always fully visible (contain) */
-      .bg-image {
-        position: fixed;
-        inset: 0;
-        z-index: -2;
-        background: center/contain no-repeat url("img.png");
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--ink);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 20%, rgba(255, 192, 203, 0.45), transparent 35%),
+        radial-gradient(circle at 85% 15%, rgba(255, 235, 150, 0.45), transparent 32%),
+        radial-gradient(circle at 70% 85%, rgba(150, 220, 255, 0.45), transparent 36%),
+        linear-gradient(135deg, #fff8fb 0%, #fffdf3 45%, #f5fcff 100%);
+      position: relative;
+      animation: birthdayGlow 12s ease-in-out infinite;
+      isolation: isolate;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      background-image:
+        radial-gradient(circle, rgba(255, 105, 135, 0.55) 0 4px, transparent 5px),
+        radial-gradient(circle, rgba(255, 193, 7, 0.55) 0 3px, transparent 4px),
+        radial-gradient(circle, rgba(0, 187, 249, 0.55) 0 3px, transparent 4px),
+        radial-gradient(circle, rgba(114, 123, 255, 0.45) 0 2px, transparent 3px);
+      background-size: 190px 190px, 150px 150px, 170px 170px, 120px 120px;
+      background-position: 0 0, 70px 50px, 30px 100px, 100px 20px;
+      opacity: 0.55;
+      animation: confettiDrift 18s linear infinite;
+    }
+
+    body::after {
+      content: "HAPPY BIRTHDAY TU BINH";
+      display: grid;
+      place-items: center;
+      font-size: clamp(1.6rem, 5vw, 3.3rem);
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: rgba(255, 78, 120, 0.16);
+      text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.7);
+      transform: rotate(-8deg) translateY(-2vh);
+      white-space: nowrap;
+    }
+
+    .arena {
+      position: relative;
+      z-index: 1;
+    }
+
+    .fireworks-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .firework {
+      position: absolute;
+      width: 0;
+      height: 0;
+    }
+
+    .firework-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--c);
+      box-shadow: 0 0 10px var(--c);
+      animation: fireworkBurst 750ms ease-out forwards;
+    }
+
+    @keyframes birthdayGlow {
+      0%,
+      100% {
+        filter: saturate(100%);
       }
-
-      /* 3) Soft overlay to boost contrast and make text readable while giữ nguyên toàn vẹn ảnh */
-      .overlay {
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        background: var(--vignette), linear-gradient(var(--tint), var(--tint));
+      50% {
+        filter: saturate(116%);
       }
+    }
 
-      /* Confetti canvas on top */
-      canvas#confetti {
-        position: fixed;
-        inset: 0;
-        z-index: 5;
-        pointer-events: none;
+    @keyframes confettiDrift {
+      0% {
+        transform: translateY(0);
       }
-
-      /* Balloons */
-      .balloon {
-        position: fixed;
-        bottom: -160px;
-        width: 46px;
-        height: 60px;
-        border-radius: 50% 50% 48% 48%;
-        background: radial-gradient(
-            circle at 30% 30%,
-            rgba(255, 255, 255, 0.6),
-            rgba(255, 255, 255, 0) 40%
-          ),
-          var(--color, #f55);
-        box-shadow: inset -6px -10px 16px rgba(0, 0, 0, 0.2),
-          0 10px 30px rgba(0, 0, 0, 0.25);
-        transform: translateX(-50%);
-        z-index: 3;
+      100% {
+        transform: translateY(190px);
       }
-      .balloon::after {
-        content: "";
-        position: absolute;
-        bottom: -16px;
-        left: 50%;
-        width: 2px;
-        height: 90px;
-        background: rgba(255, 255, 255, 0.75);
-        transform: translateX(-50%);
-        opacity: 0.8;
+    }
+
+    @keyframes fireworkBurst {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.95;
       }
-      @keyframes floatUp {
-        0% {
-          transform: translate(-50%, 0) scale(1);
-          opacity: 0;
-        }
-        5% {
-          opacity: 1;
-        }
-        100% {
-          transform: translate(-50%, -110vh) scale(1.05);
-          opacity: 0.95;
-        }
-      }
-
-      /* Title watermark (no controls) */
-      .title {
-        position: fixed;
-        left: 50%;
-        top: 8%;
-        transform: translateX(-50%);
-        text-align: center;
-        font-weight: 800;
-        letter-spacing: 0.5px;
-        text-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
-        font-size: clamp(28px, 5vw, 52px);
-      }
-    </style>
-  </head>
-  <body>
-    <audio id="bgMusic" src="./music.m4a" preload="auto" loop></audio>
-
-    <!-- Dense text layer to fill any letterbox around the contained image -->
-    <div class="pattern" aria-hidden="true" id="pattern"></div>
-
-    <!-- Background image kept entirely visible (contain) -->
-    <div class="bg-image" aria-label="Background image"></div>
-    <div class="overlay" aria-hidden="true"></div>
-
-    <h1 class="title">🎉 Chúc mừng ngày đẻ của Khang Trần 🎂</h1>
-
-    <!-- Effects -->
-    <canvas id="confetti"></canvas>
-
-    <!-- Hidden YouTube background player (may be muted by browser autoplay policy) -->
-    <div
-      id="ytbg"
-      style="
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0.5);
         opacity: 0;
-      "
-    ></div>
+      }
+    }
 
-    <script>
-      const music = document.getElementById("bgMusic");
+    .arena {
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: end;
+      gap: min(6vw, 40px);
+      padding: clamp(16px, 5vw, 40px);
+      padding-top: clamp(88px, 12vw, 140px);
+      touch-action: manipulation;
+    }
 
-      window.addEventListener("load", () => {
-        music.volume = 0.6;
-        music.play().catch(() => {
-          // Nếu trình duyệt chặn, ta vẫn lắng nghe tương tác
-          console.log("Autoplay có thể bị chặn; chờ tương tác.");
-        });
-      });
-      // Khi trang load xong thử autoplay
-      window.addEventListener("load", () => {
-        music.volume = 0.5; // chỉnh âm lượng (0 → 1)
-        music.play().catch(() => {
-          // Nếu bị chặn, chờ người dùng click để phát
-          console.log("Autoplay bị chặn, sẽ phát sau khi click.");
-          document.addEventListener(
-            "click",
-            () => {
-              if (music.paused) {
-                music.play();
-              }
-            },
-            { once: true }
-          );
-        });
-      });
-    </script>
-    <script>
-      (function () {
-        // ======== 1) Build dense HAPPY BIRTHDAY pattern grid ========
-        const pattern = document.getElementById("pattern");
-        function fillPattern() {
-          pattern.innerHTML = "";
-          const tileW = 200,
-            tileH = 64;
-          const cols = Math.ceil(innerWidth / tileW) + 2;
-          const rows = Math.ceil(innerHeight / tileH) + 2;
-          pattern.style.gridTemplateColumns = `repeat(${cols}, ${tileW}px)`;
-          pattern.style.gridAutoRows = `${tileH}px`;
-          const words = [
-            "HAPPY BIRTHDAY",
-            "HAPPY BIRTHDAY",
-            "HAPPY BIRTHDAY",
-            "🎉 HAPPY BIRTHDAY 🎉",
-          ];
-          for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-              const s = document.createElement("span");
-              s.textContent = words[(r + c) % words.length];
-              const rot =
-                (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 15); // nghiêng trái/phải
-              s.style.transform = `rotate(${rot}deg)`;
-              s.style.opacity = (0.08 + Math.random() * 0.12).toFixed(2);
-              pattern.appendChild(s);
-            }
-          }
-        }
-        fillPattern();
-        addEventListener("resize", fillPattern);
+    .character {
+      display: flex;
+      justify-content: center;
+      align-items: end;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
 
-        // ======== 2) Confetti + balloons auto-run ========
-        const canvas = document.getElementById("confetti");
-        const ctx = canvas.getContext("2d");
-        let W, H;
-        function resize() {
-          W = canvas.width = innerWidth;
-          H = canvas.height = innerHeight;
-        }
-        resize();
-        addEventListener("resize", resize);
+    .character img {
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.28));
+      transform-origin: center bottom;
+    }
 
-        const COLORS = [
-          "#f94144",
-          "#f3722c",
-          "#f9c74f",
-          "#90be6d",
-          "#43aa8b",
-          "#577590",
-          "#ff6b6b",
-          "#ffd166",
-          "#06d6a0",
-          "#4cc9f0",
-        ];
-        let pieces = [];
-        function burst(count = 200, x = W / 2, y = H * 0.6) {
-          for (let i = 0; i < count; i++) {
-            pieces.push({
-              x: x + (Math.random() * 80 - 40),
-              y: y + (Math.random() * 40 - 20),
-              w: 6 + Math.random() * 6,
-              h: 10 + Math.random() * 12,
-              c: COLORS[(Math.random() * COLORS.length) | 0],
-              vx: Math.random() * 6 - 3,
-              vy: Math.random() * -6 - 4,
-              r: Math.random() * 3.14,
-              vr: Math.random() * 0.2 - 0.1,
-              l: 0,
-              ml: 240 + Math.random() * 160,
-            });
-          }
-        }
-        function tick() {
-          ctx.clearRect(0, 0, W, H);
-          pieces.forEach((p) => {
-            p.vy += 0.08;
-            p.x += p.vx;
-            p.y += p.vy;
-            p.r += p.vr;
-            p.l++;
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.r);
-            ctx.fillStyle = p.c;
-            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-            ctx.restore();
+    .target,
+    .bonker {
+      width: min(46vw, 300px);
+    }
+
+    .bonker-rig {
+      position: relative;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      transform-origin: 20% 78%;
+      transition: transform var(--swing-duration) ease-in-out;
+      will-change: transform;
+    }
+
+    .target {
+      transform: var(--target-base);
+      transition: transform 120ms ease;
+      will-change: transform;
+    }
+
+    .target.bonked {
+      animation: targetBonk 240ms ease-out;
+    }
+
+    .bonker-rig.swing {
+      transform: rotate(-45deg);
+    }
+
+    @media (min-width: 1024px) {
+      .arena {
+        max-width: min(92vw, 700px);
+        margin: 0 auto;
+        gap: 2vw;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .character:first-child {
+        justify-content: center;
+      }
+
+      .character:last-child {
+        justify-content: center;
+      }
+
+      .character:first-child .target {
+        width: min(34vw, 240px);
+        transform: translateX(24px);
+      }
+
+      .character:last-child .bonker-rig {
+        margin-left: 0;
+        transform: translateX(-24px);
+        transform-origin: 14% 82%;
+      }
+
+      .character:last-child .bonker {
+        width: min(34vw, 240px);
+      }
+
+      .character:last-child .bonker-rig.swing {
+        transform: translateX(-50px) rotate(-58deg);
+      }
+    }
+
+    .tip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 30;
+      transform: translate(-50%, -50%);
+      font-weight: 900;
+      font-size: clamp(1.4rem, 4.4vw, 2.8rem);
+      font-family: "Comic Sans MS", "Segoe Print", "Bradley Hand", cursive;
+      color: #ff4f9a;
+      letter-spacing: 0.03em;
+      text-shadow:
+        -2px -2px 0 #fff,
+        2px -2px 0 #fff,
+        -2px 2px 0 #fff,
+        2px 2px 0 #fff,
+        0 8px 14px rgba(0, 0, 0, 0.2);
+      animation: floatUp 1300ms ease-out forwards;
+      white-space: nowrap;
+    }
+
+    @keyframes targetBonk {
+      0% {
+        transform: translateY(0) scaleY(1);
+      }
+      30% {
+        transform: translateY(8px) scaleY(0.75) rotate(1.2deg);
+      }
+      55% {
+        transform: translateY(4px) scaleY(0.84) rotate(-1.2deg);
+      }
+      80% {
+        transform: translateY(2px) scaleY(0.92) rotate(0.8deg);
+      }
+      100% {
+        transform: translateY(0) scaleY(1) rotate(0);
+      }
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translate(-50%, -50%) scale(0.85);
+        opacity: 0;
+      }
+      20% {
+        opacity: 1;
+      }
+      70% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -130%) scale(1.15);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .arena {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+        align-items: end;
+        justify-items: center;
+        gap: 3vw;
+        padding: 12px 10px 76px;
+      }
+
+      .character {
+        align-items: end;
+      }
+
+      .target,
+      .bonker {
+        width: min(44vw, 200px);
+      }
+
+    }
+  </style>
+</head>
+<body>
+  <div class="fireworks-layer" id="fireworksLayer" aria-hidden="true"></div>
+
+  <main class="arena" id="arena">
+    <section class="character" aria-label="muc tieu">
+      <img
+        id="target"
+        class="target"
+        src="./img/target.png"
+        alt="Muc tieu"
+        draggable="false"
+      />
+    </section>
+
+    <section class="character" aria-label="nguoi cam bua">
+      <div id="bonkerRig" class="bonker-rig">
+        <img
+          id="bonker"
+          class="bonker"
+          src="./img/bonker.png"
+          alt="Nguoi cam gay"
+          draggable="false"
+        />
+      </div>
+    </section>
+  </main>
+
+  <audio id="bonkAudio" preload="auto">
+    <source src="bonk.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script>
+    const targetEl = document.getElementById("target");
+    const bonkerRigEl = document.getElementById("bonkerRig");
+    const arenaEl = document.getElementById("arena");
+    const bonkAudio = document.getElementById("bonkAudio");
+    const fireworksLayerEl = document.getElementById("fireworksLayer");
+    const AUDIO_SEEK_SECONDS = 0.1;
+    const AUDIO_POOL_SIZE = 8;
+    const bonkAudioSrc = bonkAudio?.querySelector("source")?.getAttribute("src") || "bonk.mp3";
+    const bonkAudioPool = [];
+    let isAudioPrimed = false;
+    let audioUnlockPromise = null;
+    let wordIndex = 0;
+
+    const words = ["Happy", "Birthday", "Tú", "Bình"];
+    const fireworkColors = [
+      "rgba(255, 105, 135, 0.9)",
+      "rgba(255, 193, 7, 0.9)",
+      "rgba(0, 187, 249, 0.9)",
+      "rgba(114, 123, 255, 0.9)",
+    ];
+
+    function createVoice() {
+      const voice = new Audio(bonkAudioSrc);
+      voice.preload = "auto";
+      voice.load();
+      return voice;
+    }
+
+    function primeBonkAudioPool() {
+      for (let i = 0; i < AUDIO_POOL_SIZE; i += 1) {
+        bonkAudioPool.push(createVoice());
+      }
+    }
+
+    function ensureAudioPrimed() {
+      if (!isAudioPrimed) {
+        bonkAudio.load();
+        primeBonkAudioPool();
+        isAudioPrimed = true;
+      }
+
+      if (!audioUnlockPromise) {
+        const unlockVoice = bonkAudioPool[0] || bonkAudio;
+        audioUnlockPromise = unlockVoice
+          .play()
+          .then(() => {
+            unlockVoice.pause();
+            unlockVoice.currentTime = 0;
+          })
+          .catch(() => {
+            // If unlock fails, keep going and rely on next direct interaction.
           });
-          pieces = pieces.filter((p) => p.l < p.ml && p.y < H + 50);
-          requestAnimationFrame(tick);
-        }
-        tick();
+      }
 
-        function spawnBalloon() {
-          const b = document.createElement("div");
-          b.className = "balloon";
-          b.style.left = 30 + Math.random() * (innerWidth - 60) + "px";
-          b.style.setProperty(
-            "--color",
-            COLORS[(Math.random() * COLORS.length) | 0]
-          );
-          const dur = 8 + Math.random() * 10;
-          b.style.animation = `floatUp ${dur}s linear forwards`;
-          document.body.appendChild(b);
-          b.addEventListener("animationend", () => b.remove());
-        }
+      return audioUnlockPromise;
+    }
 
-        // Auto sequence
-        burst(260);
-        for (let i = 0; i < 14; i++) setTimeout(spawnBalloon, i * 220);
-        // Periodic small bursts
-        setInterval(
-          () => burst(120, Math.random() * W, H * (0.35 + 0.4 * Math.random())),
-          1000
-        );
-        // Periodic balloons
-        setInterval(() => {
-          for (let i = 0; i < 4; i++) setTimeout(spawnBalloon, i * 180);
-        }, 1000);
-      })();
-    </script>
-  </body>
+    function setVoiceStartTime(voice) {
+      try {
+        if (Number.isFinite(voice.duration) && voice.duration > AUDIO_SEEK_SECONDS) {
+          voice.currentTime = AUDIO_SEEK_SECONDS;
+        } else {
+          voice.currentTime = 0;
+        }
+      } catch {
+        // Some browsers can throw if metadata is not ready yet.
+        voice.currentTime = 0;
+      }
+    }
+
+    function swingHammer() {
+      bonkerRigEl.classList.remove("swing");
+      // Force reflow so repeated clicks retrigger the same animation frame-perfectly.
+      void bonkerRigEl.offsetWidth;
+      bonkerRigEl.classList.add("swing");
+
+      setTimeout(() => {
+        bonkerRigEl.classList.remove("swing");
+      }, 110);
+    }
+
+    function bonkTarget() {
+      targetEl.classList.remove("bonked");
+      void targetEl.offsetWidth;
+      targetEl.classList.add("bonked");
+    }
+
+    function playBonkSound() {
+      if (!bonkAudioPool.length) return;
+
+      let voice = bonkAudioPool.find((item) => (item.paused || item.ended) && item.readyState >= 2);
+
+      if (!voice) {
+        voice = bonkAudioPool.find((item) => item.paused || item.ended);
+      }
+
+      // If every voice is busy, create one more on demand instead of cutting sounds.
+      if (!voice) {
+        voice = createVoice();
+        bonkAudioPool.push(voice);
+      }
+
+      setVoiceStartTime(voice);
+
+      voice.play().catch(() => {
+        // Fallback to the original audio element for edge cases on early interactions.
+        setVoiceStartTime(bonkAudio);
+        bonkAudio.play().catch(() => {
+          // Ignore autoplay restrictions until the browser grants media interaction.
+        });
+      });
+    }
+
+    function getRandomTipPoint() {
+      const safePadX = Math.max(70, window.innerWidth * 0.12);
+      const safePadY = Math.max(70, window.innerHeight * 0.16);
+      const minX = safePadX;
+      const maxX = Math.max(minX + 1, window.innerWidth - safePadX);
+      const minY = safePadY;
+      const maxY = Math.max(minY + 1, window.innerHeight - safePadY);
+
+      return {
+        x: Math.random() * (maxX - minX) + minX,
+        y: Math.random() * (maxY - minY) + minY,
+      };
+    }
+
+    function spawnText() {
+      const point = getRandomTipPoint();
+      const tip = document.createElement("span");
+      tip.className = "tip";
+      tip.textContent = words[wordIndex];
+      wordIndex = (wordIndex + 1) % words.length;
+      tip.style.left = point.x + "px";
+      tip.style.top = point.y + "px";
+
+      document.body.appendChild(tip);
+      tip.addEventListener("animationend", () => {
+        tip.remove();
+      });
+    }
+
+    function spawnFirework() {
+      if (!fireworksLayerEl) return;
+
+      const burst = document.createElement("div");
+      burst.className = "firework";
+
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * (window.innerHeight * 0.7);
+      burst.style.left = x + "px";
+      burst.style.top = y + "px";
+
+      const particleCount = 10;
+      for (let i = 0; i < particleCount; i += 1) {
+        const p = document.createElement("span");
+        const angle = (Math.PI * 2 * i) / particleCount;
+        const distance = 26 + Math.random() * 34;
+        p.className = "firework-particle";
+        p.style.setProperty("--dx", Math.cos(angle) * distance + "px");
+        p.style.setProperty("--dy", Math.sin(angle) * distance + "px");
+        p.style.setProperty("--c", fireworkColors[Math.floor(Math.random() * fireworkColors.length)]);
+        burst.appendChild(p);
+      }
+
+      fireworksLayerEl.appendChild(burst);
+      setTimeout(() => {
+        burst.remove();
+      }, 800);
+    }
+
+    function onBonk() {
+      swingHammer();
+      bonkTarget();
+      spawnText();
+
+      const ready = ensureAudioPrimed();
+      if (ready && typeof ready.finally === "function") {
+        ready.finally(playBonkSound);
+      } else {
+        playBonkSound();
+      }
+    }
+
+    ensureAudioPrimed();
+    arenaEl.addEventListener("pointerdown", onBonk);
+    setInterval(spawnFirework, 500);
+  </script>
+</body>
 </html>
